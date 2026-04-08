@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Dice Game</h1>
+  <button onclick="roll()">Roll</button>
+  <p id="result"></p>
+  <script>
+    function roll() {
+      const faces = ["⚀","⚁","⚂","⚃","⚄","⚅"];
+      const n = Math.floor(Math.random() * 6);
+      document.getElementById("result").textContent = faces[n] + " You rolled " + (n+1);
+    }
+  </script>
+</body>
+</html>
