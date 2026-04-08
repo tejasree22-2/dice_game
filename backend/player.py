@@ -6,11 +6,19 @@ class Player:
         self.score = 0
 
     def take_turn(self):
+        input(f"{self.name} → press Enter to roll...")
         result = roll()
         self.score += result
-        print(f"{self.name} rolled: {result} {get_face(result)}")
+        print(f"You rolled: {result} {get_face(result)}")
         return result
 
-class Computer(Player):
+class Computer:
     def __init__(self):
-        super().__init__("Computer")
+        self.name = "Computer"
+        self.score = 0
+
+    def take_turn(self):
+        result = roll()
+        self.score += result
+        print(f"Computer rolled: {result} {get_face(result)}")
+        return result

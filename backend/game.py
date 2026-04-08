@@ -14,3 +14,5 @@ def start_game():
     if player.score > computer.score:   print("You win!")
     elif player.score < computer.score: print("Computer wins!")
     else:                               print("Tie!")
+if __name__ == "__main__":
+    start_game()
