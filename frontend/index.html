@@ -1,17 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <title>Dice Game</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Dice Game</h1>
-  <button onclick="roll()">Roll</button>
-  <p id="result"></p>
+  <h1>🎲 Dice Game</h1>
+
+  <div id="modeScreen">
+    <button onclick="selectMode('computer')">🤖 vs Computer</button>
+    <button onclick="selectMode('friend')">👥 vs Friend</button>
+  </div>
+
+  <div id="nameScreen" style="display:none">
+    <input type="text" id="player1Name" placeholder="Player 1 name" />
+    <input type="text" id="player2Name" placeholder="Player 2 name" style="display:none"/>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="gameArea" style="display:none">
+    <h2 id="roundInfo">Round 1 of 3</h2>
+    <h3 id="turnInfo"></h3>
+    <div class="scoreboard">
+      <p id="player1Score"></p>
+      <p id="player2Score"></p>
+    </div>
+    <button id="rollBtn" onclick="rollDice()">🎲 Roll Dice</button>
+    <p id="player1Roll"></p>
+    <p id="player2Roll"></p>
+    <p id="result"></p>
+  </div>
+
   <script>
-    function roll() {
-      const faces = ["⚀","⚁","⚂","⚃","⚄","⚅"];
-      const n = Math.floor(Math.random() * 6);
-      document.getElementById("result").textContent = faces[n] + " You rolled " + (n+1);
+    const API = "http://localhost:5000";
+    let gameId = "game1";
+    let mode = "";
+    let round = 1;
+
+    function selectMode(m) {
+      mode = m;
+      document.getElementById("modeScreen").style.display = "none";
+      document.getElementById("nameScreen").style.display = "block";
+      if (m === "friend") {
+        document.getElementById("player2Name").style.display = "inline";
+      }
+    }
+
+    async function startGame() {
+      const p1 = document.getElementById("player1Name").value;
+      const p2 = mode === "friend"
+        ? document.getElementById("player2Name").value
+        : "Computer";
+
+      if (!p1) { alert("Enter Player 1 name!"); return; }
+      if (mode === "friend" && !p2) { alert("Enter Player 2 name!"); return; }
+
+      await fetch(`${API}/start`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({mode, player1: p1, player2: p2})
+      });
+
+      document.getElementById("nameScreen").style.display = "none";
+      document.getElementById("gameArea").style.display = "block";
+      document.getElementById("player1Score").textContent = `${p1}: 0`;
+      document.getElementById("player2Score").textContent = `${p2}: 0`;
+      document.getElementById("turnInfo").textContent =
+        mode === "friend" ? `${p1}'s turn` : "";
+    }
+
+    async function rollDice() {
+      if (round > 3) return;
+
+      if (mode === "computer") {
+        const res = await fetch(`${API}/rollfor/${gameId}/player1`).then(r => r.json());
+        document.getElementById("player1Roll").textContent =
+          `${res.player.name}: ${res.player.number} ${res.player.face}`;
+        document.getElementById("player2Roll").textContent =
+          `${res.computer.name}: ${res.computer.number} ${res.computer.face}`;
+        document.getElementById("player1Score").textContent =
+          `${res.player.name}: ${res.player.score}`;
+        document.getElementById("player2Score").textContent =
+          `${res.computer.name}: ${res.computer.score}`;
+        round = res.round;
+
+      } else {
+        const turn = document.getElementById("turnInfo").textContent.includes(document.getElementById("player1Name").value) ? "player1" : "player2";
+        const res = await fetch(`${API}/rollfor/${gameId}/${turn}`).then(r => r.json());
+
+        if (turn === "player1") {
+          document.getElementById("player1Roll").textContent = `${res.name}: ${res.number} ${res.face}`;
+          document.getElementById("player1Score").textContent = `${res.name}: ${res.score}`;
+        } else {
+          document.getElementById("player2Roll").textContent = `${res.name}: ${res.number} ${res.face}`;
+          document.getElementById("player2Score").textContent = `${res.name}: ${res.score}`;
+        }
+
+        document.getElementById("turnInfo").textContent = `${res.turn === "player1"
+          ? document.getElementById("player1Name").value
+          : document.getElementById("player2Name").value}'s turn`;
+        round = res.round;
+      }
+
+      document.getElementById("roundInfo").textContent =
+        round <= 3 ? `Round ${round} of 3` : "Game Over!";
+
+      if (round > 3) {
+        const w = await fetch(`${API}/winner/${gameId}`).then(r => r.json());
+        document.getElementById("result").textContent =
+          w.winner === "Tie" ? "🤝 It's a Tie!" : `🎉 ${w.winner} Wins!`;
+        document.getElementById("rollBtn").disabled = true;
+      }
     }
   </script>
 </body>
